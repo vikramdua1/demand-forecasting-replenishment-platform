@@ -390,14 +390,13 @@ This project highlighted several important real-world analytics engineering less
 
 Potential next steps include:
 
-- moving from CSV serving to Postgres
-- adding Docker and docker-compose
-- deploying FastAPI and Streamlit to cloud infrastructure
-- adding automated retraining and scheduled scoring
-- improving replenishment logic with lead-time and safety stock assumptions
-- adding richer visualizations to the dashboard
-- comparing additional models such as Gradient Boosting or SARIMAX
-- introducing monitoring, logging, and CI/CD workflows
+- replacing CSV-based serving with a more production-ready data store such as Postgres
+- deploying the API and dashboard to cloud infrastructure
+- adding automated retraining and scheduled scoring workflows
+- extending replenishment logic with lead-time, service-level, and safety stock assumptions
+- enriching the dashboard with trend charts and portfolio-level analytics
+- benchmarking additional forecasting models such as Gradient Boosting or SARIMAX
+- introducing monitoring, logging, testing, and CI/CD workflows
 
 ## 18. Summary
 
