@@ -381,23 +381,23 @@ http://localhost:8501
 
 This project highlighted several important real-world analytics engineering lessons:
 
-forecasting performance can be overstated if leakage-prone variables are not carefully removed
-weekly aggregation may be more practical than daily forecasting when series are highly noisy
-classical time-series models remain strong benchmarks and should not be ignored
-production-style analytics projects need more than modeling: they need pipelines, scoring logic, APIs, and a user-facing interface
+- forecasting performance can be overstated if leakage-prone variables are not carefully removed
+- weekly aggregation may be more practical than daily forecasting when series are highly noisy
+- classical time-series models remain strong benchmarks and should not be ignored
+- production-style analytics projects need more than modeling: they need pipelines, scoring logic, APIs, and a user-facing interface
 
 ## 17. Future Improvements
 
 Potential next steps include:
 
-moving from CSV serving to Postgres
-adding Docker and docker-compose
-deploying FastAPI and Streamlit to cloud infrastructure
-adding automated retraining and scheduled scoring
-improving replenishment logic with lead-time and safety stock assumptions
-adding richer visualizations to the dashboard
-comparing additional models such as Gradient Boosting or SARIMAX
-introducing monitoring, logging, and CI/CD workflows
+- moving from CSV serving to Postgres
+- adding Docker and docker-compose
+- deploying FastAPI and Streamlit to cloud infrastructure
+- adding automated retraining and scheduled scoring
+- improving replenishment logic with lead-time and safety stock assumptions
+- adding richer visualizations to the dashboard
+- comparing additional models such as Gradient Boosting or SARIMAX
+- introducing monitoring, logging, and CI/CD workflows
 
 ## 18. Summary
 
