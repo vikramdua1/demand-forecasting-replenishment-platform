@@ -10,6 +10,14 @@ An end-to-end retail analytics system that forecasts next-week demand at the sto
 - Exposed forecasts and replenishment recommendations through FastAPI endpoints
 - Delivered an interactive Streamlit dashboard and Dockerized local deployment
 
+## Screenshots
+
+### FastAPI Docs
+![FastAPI Docs](assets/fastapi-docs.png)
+
+### Streamlit Dashboard
+![Streamlit Dashboard](assets/streamlit-dashboard.png)
+
 ## 1. Business Problem
 
 Retail planning teams need better visibility into future demand and replenishment requirements in order to reduce stockout risk and improve ordering decisions.
