@@ -217,6 +217,7 @@ Stockout risk is classified into:
 
 This provides a practical decision-support layer for the dashboard and API.
 
+
 ## 10. Architecture
 
 ### High-level flow
@@ -230,10 +231,12 @@ Raw CSV
 → Scored forecasts + replenishment output
 → FastAPI backend
 → Streamlit dashboard
-'''
+```
+
 
 ## 11. Project Structure
 
+```text
 demand-forecasting-platform/
 ├── app/
 │   └── main.py
@@ -251,51 +254,68 @@ demand-forecasting-platform/
 │   └── score.py
 ├── requirements.txt
 └── README.md
+```
 
 ## 12. Pipeline Components
 
+```text
 pipeline/ingest.py
+```
 loads raw CSV
 standardizes columns
 validates types and required fields
 aggregates daily data to weekly store-product level
 removes incomplete edge weeks
 writes weekly_modeling_table.csv
+
+```text
 pipeline/features.py
+```
 creates lag and rolling features
 creates calendar features
 creates target_next_week
 removes rows without sufficient history
 writes model_feature_table.csv
+
+```text
 pipeline/train.py
+```
 performs time-based train/test split
 evaluates naive and rolling mean baselines
 evaluates Holt-Winters benchmark
 trains Random Forest model
 saves model artifact and metrics
+
+```text
 pipeline/score.py
+```
 loads latest feature rows
 applies trained model
 generates next-week forecast
 calculates reorder point and stockout risk
 writes scored_forecasts.csv
 
-##13. API Layer
+## 13. API Layer
+
 
 The FastAPI backend exposes scored forecasts and replenishment outputs.
 
+```text
 Endpoints
 GET /
 GET /health
 GET /forecasts
 GET /forecast/{store_id}/{product_id}
 GET /replenishment/{store_id}/{product_id}
+```
+
 Example use cases
 retrieve all scored forecasts
 retrieve a single store-product forecast
 retrieve replenishment recommendation for a selected item
 
-##14. Dashboard
+
+## 14. Dashboard
 
 The Streamlit dashboard provides a lightweight business-facing interface.
 
@@ -316,26 +336,46 @@ sort by recommended order quantity and forecast metrics
 ## 15. How to Run Locally
 
 1. Create and activate virtual environment
+```text
 python3 -m venv .venv
 source .venv/bin/activate
+```
+
 2. Install dependencies
+```text
 python -m pip install -r requirements.txt
+```
+
 3. Run pipelines in order
+
+```text
 python pipeline/ingest.py
 python pipeline/features.py
 python pipeline/train.py
 python pipeline/score.py
-4. Start FastAPI
+```
+
+5. Start FastAPI
+```text
 uvicorn app.main:app --reload
-5. Start Streamlit in a separate terminal
+```
+
+6. Start Streamlit in a separate terminal
+```text
 streamlit run dashboard/app.py
-6. Open in browser
+```
+
+7. Open in browser
 
 FastAPI docs:
+```text
 http://127.0.0.1:8000/docs
+```
 
 Streamlit dashboard:
+```text
 http://localhost:8501
+```
 
 ## 16. Key Learnings
 
