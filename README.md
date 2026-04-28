@@ -2,6 +2,14 @@
 
 An end-to-end retail analytics system that forecasts next-week demand at the store-product level, generates replenishment recommendations, serves results through a FastAPI backend, and provides a business-facing dashboard in Streamlit.
 
+## Project Highlights
+
+- Built an end-to-end demand forecasting and replenishment workflow from raw CSV ingestion to business-facing dashboard delivery
+- Designed a leakage-safe next-week forecasting setup at the store-product-week level
+- Benchmarked naive, rolling mean, Holt-Winters, and Random Forest models
+- Exposed forecasts and replenishment recommendations through FastAPI endpoints
+- Delivered an interactive Streamlit dashboard and Dockerized local deployment
+
 ## 1. Business Problem
 
 Retail planning teams need better visibility into future demand and replenishment requirements in order to reduce stockout risk and improve ordering decisions.
