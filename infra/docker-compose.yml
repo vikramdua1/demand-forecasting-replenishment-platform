@@ -1,0 +1,26 @@
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.api
+    container_name: demand_forecasting_api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../data:/app/data
+      - ../models:/app/models
+
+  dashboard:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.dashboard
+    container_name: demand_forecasting_dashboard
+    ports:
+      - "8501:8501"
+    depends_on:
+      - api
+    environment:
+      API_BASE_URL: "http://api:8000"
+    volumes:
+      - ../data:/app/data
+      - ../models:/app/models

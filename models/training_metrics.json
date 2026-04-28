@@ -1,0 +1,46 @@
+{
+    "target_definition": "predict next week's units sold using information available at the current week",
+    "train_rows": 7900,
+    "test_rows": 2000,
+    "categorical_features": [
+        "store_id",
+        "product_id",
+        "dominant_seasonality"
+    ],
+    "numerical_features": [
+        "holiday_promotion_flag",
+        "lag_1",
+        "lag_2",
+        "lag_4",
+        "rolling_mean_4",
+        "rolling_std_4",
+        "year",
+        "month",
+        "quarter",
+        "week_of_year"
+    ],
+    "baselines": {
+        "baseline_current_week_equals_next_week": {
+            "mae": 319.3085,
+            "rmse": 400.2194,
+            "r2": -0.9917
+        },
+        "baseline_rolling_mean_4": {
+            "mae": 254.3111,
+            "rmse": 320.4593,
+            "r2": -0.2769
+        }
+    },
+    "holt_winters": {
+        "mae": 237.6407,
+        "rmse": 301.6313,
+        "r2": -0.1313,
+        "successful_series": 100,
+        "failed_series": 0
+    },
+    "random_forest": {
+        "mae": 226.7278,
+        "rmse": 284.6691,
+        "r2": -0.0076
+    }
+}
