@@ -1,48 +1,39 @@
+from __future__ import annotations
+
 from pathlib import Path
+from datetime import datetime
+import json
 import pandas as pd
 
-
-RAW_PATH = Path("/Users/admin/Downloads/demand-forecasting-platform/data/raw/retail_store_inventory.csv")
-OUTPUT_DIR = Path("data/processed")
-OUTPUT_PATH = OUTPUT_DIR / "weekly_modeling_table.csv"
+from pipeline.validate import validate_or_raise, save_validation_report
 
 
-COLUMN_RENAME_MAP = {
-    "Date": "date",
-    "Store ID": "store_id",
-    "Product ID": "product_id",
-    "Category": "category",
-    "Region": "region",
-    "Inventory Level": "inventory_level",
-    "Units Sold": "units_sold",
-    "Units Ordered": "units_ordered",
-    "Demand Forecast": "demand_forecast",
-    "Price": "price",
-    "Discount": "discount",
-    "Weather Condition": "weather_condition",
-    "Holiday/Promotion": "holiday_promotion",
-    "Competitor Pricing": "competitor_pricing",
-    "Seasonality": "seasonality",
-}
+BASE_DIR = Path(__file__).resolve().parents[1]
 
+RAW_PATH = BASE_DIR / "data" / "raw" / "retail_store_inventory.csv"
+STAGING_DIR = BASE_DIR / "data" / "staging"
+CURATED_DIR = BASE_DIR / "data" / "curated"
+LOGS_DIR = BASE_DIR / "logs"
 
-def load_raw_data(path: Path) -> pd.DataFrame:
-    """Load the raw retail inventory dataset."""
-    if not path.exists():
-        raise FileNotFoundError(f"Raw data file not found: {path}")
-
-    df = pd.read_csv(path)
-    return df
+STAGING_PATH = STAGING_DIR / "clean_daily_inventory.csv"
+WEEKLY_OUTPUT_PATH = CURATED_DIR / "weekly_modeling_table.csv"
+VALIDATION_REPORT_PATH = LOGS_DIR / "raw_validation_report.json"
+PIPELINE_RUN_LOG_PATH = LOGS_DIR / "ingest_run_log.json"
 
 
 def standardize_columns(df: pd.DataFrame) -> pd.DataFrame:
-    """Rename columns to snake_case names used across the project."""
-    df = df.rename(columns=COLUMN_RENAME_MAP)
+    df = df.copy()
+    df.columns = (
+        df.columns.str.strip()
+        .str.lower()
+        .str.replace(" ", "_")
+        .str.replace("/", "_")
+        .str.replace("-", "_")
+    )
     return df
 
 
-def cast_and_validate(df: pd.DataFrame) -> pd.DataFrame:
-    """Parse dates, cast numeric columns, and run basic validation checks."""
+def coerce_types(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
 
     df["date"] = pd.to_datetime(df["date"], errors="coerce")
@@ -60,53 +51,29 @@ def cast_and_validate(df: pd.DataFrame) -> pd.DataFrame:
     for col in numeric_columns:
         df[col] = pd.to_numeric(df[col], errors="coerce")
 
-    required_columns = [
-        "date",
-        "store_id",
-        "product_id",
-        "category",
-        "region",
-        "inventory_level",
-        "units_sold",
-        "units_ordered",
-        "price",
-        "discount",
-        "competitor_pricing",
-        "weather_condition",
-        "holiday_promotion",
-        "seasonality",
-    ]
-
-    missing_required = df[required_columns].isnull().sum()
-    if missing_required.any():
-        raise ValueError(
-            "Missing values found in required columns:\n"
-            f"{missing_required[missing_required > 0]}"
-        )
-
-    if (df["units_sold"] < 0).any():
-        raise ValueError("Negative values found in units_sold.")
-
-    if (df["inventory_level"] < 0).any():
-        raise ValueError("Negative values found in inventory_level.")
-
     return df
 
 
-def add_week_columns(df: pd.DataFrame) -> pd.DataFrame:
-    """Create a week start date column for weekly aggregation."""
+def clean_daily_data(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
-    df["week_start_date"] = df["date"].dt.to_period("W").apply(lambda r: r.start_time)
+
+    critical_columns = ["date", "store_id", "product_id", "units_sold"]
+    df = df.dropna(subset=critical_columns)
+
+    df = df.sort_values(["store_id", "product_id", "date"]).reset_index(drop=True)
+
     return df
 
 
 def build_weekly_modeling_table(df: pd.DataFrame) -> pd.DataFrame:
-    """Aggregate the daily dataset to store-product-week level."""
-    weekly = (
-        df.groupby(["week_start_date", "store_id", "product_id"], as_index=False)
+    df = df.copy()
+
+    df["week_start_date"] = df["date"] - pd.to_timedelta(df["date"].dt.weekday, unit="D")
+    df["week_start_date"] = df["week_start_date"].dt.normalize()
+
+    weekly_df = (
+        df.groupby(["store_id", "product_id", "week_start_date"], as_index=False)
         .agg(
-            category=("category", lambda x: x.mode().iloc[0]),
-            region=("region", lambda x: x.mode().iloc[0]),
             weekly_units_sold=("units_sold", "sum"),
             weekly_units_ordered=("units_ordered", "sum"),
             avg_inventory_level=("inventory_level", "mean"),
@@ -114,60 +81,89 @@ def build_weekly_modeling_table(df: pd.DataFrame) -> pd.DataFrame:
             avg_discount=("discount", "mean"),
             avg_competitor_pricing=("competitor_pricing", "mean"),
             avg_demand_forecast=("demand_forecast", "mean"),
-            holiday_promotion_flag=("holiday_promotion", lambda x: int((x == 1).any())),
-            dominant_weather_condition=("weather_condition", lambda x: x.mode().iloc[0]),
-            dominant_seasonality=("seasonality", lambda x: x.mode().iloc[0]),
-            days_in_week=("date", "nunique"),
+            dominant_seasonality=("seasonality", lambda x: x.mode().iloc[0] if not x.mode().empty else pd.NA),
+            dominant_weather_condition=("weather_condition", lambda x: x.mode().iloc[0] if not x.mode().empty else pd.NA),
+            holiday_promotion_flag=("holiday_promotion", lambda x: int((x.astype(str).str.lower().isin(["yes", "true", "1"])).any())),
         )
-        .sort_values(["store_id", "product_id", "week_start_date"])
-        .reset_index(drop=True)
     )
 
-    return weekly
+    weekly_df = weekly_df.sort_values(["store_id", "product_id", "week_start_date"]).reset_index(drop=True)
+
+    return weekly_df
 
 
-def remove_incomplete_edge_weeks(weekly_df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Remove incomplete edge weeks.
-    Since weekly resampling may create partial first/last weeks,
-    keep only records with full 7-day coverage.
-    """
-    cleaned = weekly_df[weekly_df["days_in_week"] == 7].copy()
-    cleaned = cleaned.reset_index(drop=True)
-    return cleaned
+def write_run_log(
+    raw_rows: int,
+    staging_rows: int,
+    curated_rows: int,
+    validation_report: dict,
+) -> None:
+    run_log = {
+        "run_timestamp": datetime.utcnow().isoformat(),
+        "raw_input_path": str(RAW_PATH),
+        "staging_output_path": str(STAGING_PATH),
+        "curated_output_path": str(WEEKLY_OUTPUT_PATH),
+        "raw_row_count": int(raw_rows),
+        "staging_row_count": int(staging_rows),
+        "curated_row_count": int(curated_rows),
+        "validation_status": validation_report["status"],
+        "validation_warnings": validation_report["warnings"],
+        "summary": validation_report["summary"],
+    }
 
-
-def save_output(df: pd.DataFrame, output_path: Path) -> None:
-    """Save the processed weekly modeling table."""
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    df.to_csv(output_path, index=False)
+    PIPELINE_RUN_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with open(PIPELINE_RUN_LOG_PATH, "w") as f:
+        json.dump(run_log, f, indent=4)
 
 
 def main() -> None:
-    print("Loading raw data...")
-    df = load_raw_data(RAW_PATH)
+    print("Loading raw retail inventory data...")
+
+    STAGING_DIR.mkdir(parents=True, exist_ok=True)
+    CURATED_DIR.mkdir(parents=True, exist_ok=True)
+    LOGS_DIR.mkdir(parents=True, exist_ok=True)
+
+    df = pd.read_csv(RAW_PATH)
+    raw_rows = len(df)
 
     print("Standardizing columns...")
     df = standardize_columns(df)
 
-    print("Casting and validating data...")
-    df = cast_and_validate(df)
+    print("Coercing data types...")
+    df = coerce_types(df)
 
-    print("Adding weekly time keys...")
-    df = add_week_columns(df)
+    print("Validating raw data...")
+    validation_report = validate_or_raise(df)
+    save_validation_report(validation_report, VALIDATION_REPORT_PATH)
+
+    print("Cleaning daily data...")
+    clean_df = clean_daily_data(df)
+    staging_rows = len(clean_df)
+
+    print(f"Saving staged daily data to {STAGING_PATH} ...")
+    clean_df.to_csv(STAGING_PATH, index=False)
 
     print("Building weekly modeling table...")
-    weekly_df = build_weekly_modeling_table(df)
+    weekly_df = build_weekly_modeling_table(clean_df)
+    curated_rows = len(weekly_df)
 
-    print("Removing incomplete edge weeks...")
-    weekly_df = remove_incomplete_edge_weeks(weekly_df)
+    print(f"Saving curated weekly modeling table to {WEEKLY_OUTPUT_PATH} ...")
+    weekly_df.to_csv(WEEKLY_OUTPUT_PATH, index=False)
 
-    print(f"Saving weekly modeling table to {OUTPUT_PATH} ...")
-    save_output(weekly_df, OUTPUT_PATH)
+    print("Writing ingest run log...")
+    write_run_log(
+        raw_rows=raw_rows,
+        staging_rows=staging_rows,
+        curated_rows=curated_rows,
+        validation_report=validation_report,
+    )
 
     print("Done.")
-    print(f"Output shape: {weekly_df.shape}")
-    print("\nSample rows:")
+    print(f"Raw rows: {raw_rows}")
+    print(f"Staging rows: {staging_rows}")
+    print(f"Curated weekly rows: {curated_rows}")
+
+    print("\nSample weekly rows:")
     print(weekly_df.head())
 
 

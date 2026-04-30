@@ -5,10 +5,45 @@ An end-to-end retail analytics system that forecasts next-week demand at the sto
 ## Project Highlights
 
 - Built an end-to-end demand forecasting and replenishment workflow from raw CSV ingestion to business-facing dashboard delivery
-- Designed a leakage-safe next-week forecasting setup at the store-product-week level
-- Benchmarked naive, rolling mean, Holt-Winters, and Random Forest models
+- Refactored the pipeline into a more production-style architecture with **raw / staging / curated** data layers
+- Added reusable data validation checks for schema, duplicates, invalid dates, negative values, and mapping inconsistencies
+- Logged validation and ingestion outputs for stronger traceability and pipeline reliability
+- Benchmarked naive, rolling mean, Holt-Winters, and Random Forest models in a leakage-safe setup
 - Exposed forecasts and replenishment recommendations through FastAPI endpoints
-- Delivered an interactive Streamlit dashboard and Dockerized local deployment
+- Delivered an upgraded Streamlit dashboard with executive overview, forecast explorer, portfolio view, and recommendation insights
+- Dockerized the application for reproducible local deployment
+
+## Architecture Upgrade
+
+The project now follows a more enterprise-ready analytics flow:
+
+- **Raw layer** → source retail inventory CSV
+- **Staging layer** → cleaned daily inventory data
+- **Curated layer** → weekly modeling table, feature table, and scored forecasts
+- **Validation layer** → reusable checks and validation reporting
+- **Logging layer** → ingestion run log and validation outputs
+- **Serving layer** → FastAPI backend + Streamlit business dashboard
+
+This upgrade was done to make the project more aligned with how production analytics systems are structured, rather than remaining only a notebook-style modeling exercise.
+
+## Validation and Logging
+
+To make the pipeline more production-oriented, a validation layer was introduced before downstream aggregation and modeling.
+
+The validation checks include:
+
+- required column presence
+- date parsing validity
+- duplicate `(store_id, product_id, date)` records
+- numeric coercion checks
+- negative value checks
+- unstable product-to-category mappings
+- unstable store-to-region mappings
+
+The pipeline now also writes operational artifacts for traceability:
+
+- `logs/raw_validation_report.json`
+- `logs/ingest_run_log.json`
 
 ## Screenshots
 
@@ -241,27 +276,46 @@ Raw CSV
 → Streamlit dashboard
 ```
 
-
 ## 11. Project Structure
 
 ```text
 demand-forecasting-platform/
 ├── app/
 │   └── main.py
+├── assets/
+│   ├── fastapi-docs.png
+│   └── streamlit-dashboard.png
 ├── dashboard/
 │   └── app.py
 ├── data/
 │   ├── raw/
-│   └── processed/
+│   │   └── retail_store_inventory.csv
+│   ├── staging/
+│   │   └── clean_daily_inventory.csv
+│   └── curated/
+│       ├── weekly_modeling_table.csv
+│       ├── model_feature_table.csv
+│       └── scored_forecasts.csv
+├── infra/
+│   ├── Dockerfile.api
+│   ├── Dockerfile.dashboard
+│   └── docker-compose.yml
+├── logs/
+│   ├── raw_validation_report.json
+│   └── ingest_run_log.json
 ├── models/
+│   ├── random_forest_model.pkl
+│   └── training_metrics.json
 ├── notebooks/
 ├── pipeline/
 │   ├── ingest.py
+│   ├── validate.py
 │   ├── features.py
 │   ├── train.py
 │   └── score.py
-├── requirements.txt
-└── README.md
+├── .gitignore
+├── README.md
+└── requirements.txt
 ```
 
 ## 12. Pipeline Components
@@ -322,24 +376,13 @@ retrieve all scored forecasts
 retrieve a single store-product forecast
 retrieve replenishment recommendation for a selected item
 
-
 ## 14. Dashboard
 
-The Streamlit dashboard provides a lightweight business-facing interface.
+The Streamlit dashboard now includes three business-facing views:
 
-Current functionality
-Forecast Explorer
-select store
-select product
-view:
-predicted next-week demand
-reorder point
-recommended order quantity
-stockout risk
-Portfolio View
-filter forecast records
-inspect risk levels
-sort by recommended order quantity and forecast metrics
+- **Executive Overview**: top high-risk items, replenishment priorities, and portfolio summary
+- **Forecast Explorer**: store-product level forecast inspection with KPI cards, recent demand chart, and recommendation summary
+- **Portfolio View**: filterable portfolio table with downloadable CSV output
 
 ## 15. How to Run Locally
 
@@ -398,13 +441,13 @@ This project highlighted several important real-world analytics engineering less
 
 Potential next steps include:
 
-- replacing CSV-based serving with a more production-ready data store such as Postgres
-- deploying the API and dashboard to cloud infrastructure
-- adding automated retraining and scheduled scoring workflows
-- extending replenishment logic with lead-time, service-level, and safety stock assumptions
-- enriching the dashboard with trend charts and portfolio-level analytics
-- benchmarking additional forecasting models such as Gradient Boosting or SARIMAX
-- introducing monitoring, logging, testing, and CI/CD workflows
+- moving from CSV-based serving to Postgres or another database-backed storage layer
+- deploying the FastAPI and Streamlit apps to a cloud environment using a no-cost or low-cost hosting setup
+- adding scheduled retraining and automated scoring
+- improving replenishment logic with lead-time and safety-stock assumptions
+- enhancing dashboard visualization polish and business storytelling
+- comparing additional forecasting models such as Gradient Boosting or SARIMAX
+- adding monitoring, structured logging, and CI/CD workflows
 
 ## 18. Summary
 

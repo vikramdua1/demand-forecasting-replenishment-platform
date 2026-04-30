@@ -4,9 +4,11 @@ import pickle
 import pandas as pd
 
 
-INPUT_PATH = Path("data/processed/model_feature_table.csv")
-MODEL_PATH = Path("models/random_forest_model.pkl")
-OUTPUT_DIR = Path("data/processed")
+BASE_DIR = Path(__file__).resolve().parents[1]
+
+FEATURE_PATH = BASE_DIR / "data" / "curated" / "model_feature_table.csv"
+MODEL_PATH = BASE_DIR / "models" / "random_forest_model.pkl"
+OUTPUT_DIR = BASE_DIR / "data" / "curated"
 OUTPUT_PATH = OUTPUT_DIR / "scored_forecasts.csv"
 
 
@@ -47,9 +49,9 @@ def get_latest_rows(df: pd.DataFrame) -> pd.DataFrame:
     """
     latest = (
         df.sort_values(["store_id", "product_id", "week_start_date"])
-          .groupby(["store_id", "product_id"], as_index=False)
-          .tail(1)
-          .reset_index(drop=True)
+        .groupby(["store_id", "product_id"], as_index=False)
+        .tail(1)
+        .reset_index(drop=True)
     )
     return latest
 
@@ -72,14 +74,11 @@ def add_replenishment_logic(df: pd.DataFrame) -> pd.DataFrame:
     Simple v1 replenishment logic.
 
     Assumptions:
-    - current inventory proxy = this week's sales (lag_1) is not enough
-      so use a simple coverage rule based on forecast + safety stock
     - reorder point = forecast + 0.5 * rolling std
     - recommended qty = max(0, reorder point - lag_1 proxy)
     """
     df = df.copy()
 
-    # Using lag_1 as a crude proxy for recent observed demand level
     df["reorder_point"] = (
         df["predicted_next_week_units_sold"] + 0.5 * df["rolling_std_4"]
     ).round(2)
@@ -109,6 +108,8 @@ def select_output_columns(df: pd.DataFrame) -> pd.DataFrame:
             "forecast_week_start_date",
             "weekly_units_sold",
             "lag_1",
+            "lag_2",
+            "lag_4",
             "rolling_mean_4",
             "rolling_std_4",
             "predicted_next_week_units_sold",
@@ -128,7 +129,7 @@ def save_output(df: pd.DataFrame, path: Path) -> None:
 
 def main() -> None:
     print("Loading feature table...")
-    df = load_feature_table(INPUT_PATH)
+    df = load_feature_table(FEATURE_PATH)
 
     print("Loading trained model...")
     model = load_model(MODEL_PATH)
@@ -159,4 +160,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-    

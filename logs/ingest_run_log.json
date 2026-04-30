@@ -1,0 +1,24 @@
+{
+    "run_timestamp": "2026-04-30T01:59:44.411930",
+    "raw_input_path": "/Users/admin/Downloads/demand-forecasting-platform/data/raw/retail_store_inventory.csv",
+    "staging_output_path": "/Users/admin/Downloads/demand-forecasting-platform/data/staging/clean_daily_inventory.csv",
+    "curated_output_path": "/Users/admin/Downloads/demand-forecasting-platform/data/curated/weekly_modeling_table.csv",
+    "raw_row_count": 73100,
+    "staging_row_count": 73100,
+    "curated_row_count": 10600,
+    "validation_status": "passed",
+    "validation_warnings": [
+        "20 product_ids map to multiple categories.",
+        "5 store_ids map to multiple regions."
+    ],
+    "summary": {
+        "date_min": "2022-01-01 00:00:00",
+        "date_max": "2024-01-01 00:00:00",
+        "unique_stores": 5,
+        "unique_products": 20,
+        "duplicate_key_rows": 0,
+        "invalid_dates": 0,
+        "unstable_products": 20,
+        "unstable_stores": 5
+    }
+}

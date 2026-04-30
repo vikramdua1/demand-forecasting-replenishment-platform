@@ -2,8 +2,10 @@ from pathlib import Path
 import pandas as pd
 
 
-INPUT_PATH = Path("data/processed/weekly_modeling_table.csv")
-OUTPUT_DIR = Path("data/processed")
+BASE_DIR = Path(__file__).resolve().parents[1]
+
+INPUT_PATH = BASE_DIR / "data" / "curated" / "weekly_modeling_table.csv"
+OUTPUT_DIR = BASE_DIR / "data" / "curated"
 OUTPUT_PATH = OUTPUT_DIR / "model_feature_table.csv"
 
 
