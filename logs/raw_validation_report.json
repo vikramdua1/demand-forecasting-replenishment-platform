@@ -1,0 +1,21 @@
+{
+    "run_timestamp": "2026-04-30T01:59:42.196001",
+    "row_count": 73100,
+    "column_count": 15,
+    "status": "passed",
+    "errors": [],
+    "warnings": [
+        "20 product_ids map to multiple categories.",
+        "5 store_ids map to multiple regions."
+    ],
+    "summary": {
+        "date_min": "2022-01-01 00:00:00",
+        "date_max": "2024-01-01 00:00:00",
+        "unique_stores": 5,
+        "unique_products": 20,
+        "duplicate_key_rows": 0,
+        "invalid_dates": 0,
+        "unstable_products": 20,
+        "unstable_stores": 5
+    }
+}

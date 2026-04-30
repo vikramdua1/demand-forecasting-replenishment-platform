@@ -3,7 +3,8 @@ import pandas as pd
 from fastapi import FastAPI, HTTPException
 
 
-DATA_PATH = Path("data/processed/scored_forecasts.csv")
+BASE_DIR = Path(__file__).resolve().parents[1]
+DATA_PATH = BASE_DIR / "data" / "curated" / "scored_forecasts.csv"
 
 app = FastAPI(
     title="Demand Forecasting & Replenishment API",
@@ -80,4 +81,3 @@ def get_replenishment(store_id: str, product_id: str):
         "recommended_order_qty": row["recommended_order_qty"],
         "stockout_risk": row["stockout_risk"],
     }
-    

@@ -12,10 +12,12 @@ from sklearn.preprocessing import OneHotEncoder
 from statsmodels.tsa.holtwinters import ExponentialSmoothing
 
 
-INPUT_PATH = Path("data/processed/model_feature_table.csv")
-MODELS_DIR = Path("models")
-MODEL_PATH = MODELS_DIR / "random_forest_model.pkl"
-METRICS_PATH = MODELS_DIR / "training_metrics.json"
+BASE_DIR = Path(__file__).resolve().parents[1]
+
+FEATURE_PATH = BASE_DIR / "data" / "curated" / "model_feature_table.csv"
+MODEL_DIR = BASE_DIR / "models"
+MODEL_PATH = MODEL_DIR / "random_forest_model.pkl"
+METRICS_PATH = MODEL_DIR / "training_metrics.json"
 
 
 TARGET_COL = "target_next_week"
@@ -220,7 +222,7 @@ def evaluate_model(model: Pipeline, test_df: pd.DataFrame) -> dict:
 
 def save_model(model: Pipeline, path: Path) -> None:
     """Save the trained model artifact."""
-    MODELS_DIR.mkdir(parents=True, exist_ok=True)
+    MODEL_DIR.mkdir(parents=True, exist_ok=True)
 
     with open(path, "wb") as f:
         pickle.dump(model, f)
@@ -228,7 +230,7 @@ def save_model(model: Pipeline, path: Path) -> None:
 
 def save_metrics(metrics: dict, path: Path) -> None:
     """Save training and evaluation metrics."""
-    MODELS_DIR.mkdir(parents=True, exist_ok=True)
+    MODEL_DIR.mkdir(parents=True, exist_ok=True)
 
     with open(path, "w") as f:
         json.dump(metrics, f, indent=4)
@@ -236,7 +238,7 @@ def save_metrics(metrics: dict, path: Path) -> None:
 
 def main() -> None:
     print("Loading feature table...")
-    df = load_data(INPUT_PATH)
+    df = load_data(FEATURE_PATH)
 
     print("Creating time-based split...")
     train_df, test_df = time_based_split(df)
